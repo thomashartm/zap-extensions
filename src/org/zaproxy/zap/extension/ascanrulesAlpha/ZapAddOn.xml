@@ -28,6 +28,7 @@
 		<ascanrule>org.zaproxy.zap.extension.ascanrulesAlpha.SourceCodeDisclosureGit</ascanrule>
 		<ascanrule>org.zaproxy.zap.extension.ascanrulesAlpha.SQLInjectionSQLite</ascanrule>
 		<ascanrule>org.zaproxy.zap.extension.ascanrulesAlpha.TestUserAgent</ascanrule>
+		<ascanrule>org.zaproxy.zap.extension.ascanrulesAlpha.AEMDispatcherPathsActiveScanner</ascanrule>
 	</ascanrules>
 	<pscanrules/>
 	<filters/>
