@@ -33,16 +33,18 @@ public class AEMDispatcherPathsActiveScanner extends AbstractHostPlugin {
             "/crx/explorer",
             "/crx/explorer/index.jsp",
             "/bin/crxde/logs",
+            "/dispatcher/invalidate.cache",
             "/jcr:system/jcr:versionStorage.json",
             "/_jcr_system/_jcr_versionStorage.json",
             "/libs/wcm/core/content/siteadmin.html",
             "/libs/collab/core/content/admin.html",
             "/libs/cq/ui/content/dumplibs.html",
+            "/libs/opensocial/proxy",
+            "/libs/shindig/proxy",
+            "/libs/cq/core/content/login.json",
             "/var/linkchecker.html",
-            "/etc/linkchecker.html",
             "/home/users/a/admin/profile.json",
             "/home/users/a/admin/profile.xml",
-            "/libs/cq/core/content/login.json",
             "/content/../libs/foundation/components/text/text.jsp",
             "/content/.{.}/libs/foundation/components/text/text.jsp",
             "/apps/sling/config/org.apache.felix.webconsole.internal.servlet.OsgiManager.config/jcr%3acontent/jcr%3adata",
@@ -58,6 +60,10 @@ public class AEMDispatcherPathsActiveScanner extends AbstractHostPlugin {
             "/content/dam.tidy.-100.json",
             "/content/content/geometrixx.sitemap.txt ",
             "/etc.xml",
+            "/etc/replication.json",
+            "/etc/replication.infinity.json",
+            "/etc/replication/treeactivation.html",
+            "/etc/linkchecker.html",
             "/content.feed.xml",
             "/content.rss.xml",
             "/content.feed.html"
@@ -128,14 +134,13 @@ public class AEMDispatcherPathsActiveScanner extends AbstractHostPlugin {
 
                 final int status = newRequest.getResponseHeader().getStatusCode();
 
-                if (HttpStatusCode.NOT_FOUND == status) {
-                    raiseAlert(newRequest, "pathexposed.");
-                }
-                if (HttpStatusCode.OK == status) {
-                    raiseAlert(newRequest, "pathexposed");
-                }
+                if (HttpStatusCode.NOT_FOUND != status) {
 
-                raiseAlert(newRequest, "pathexposed");
+                } else {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Path " + prohibitedPath + " not found. Dispatcher config seems to be correct.");
+                    }
+                }
 
             } catch (IOException e) {
                 log.error("Unable to request path: " + prohibitedPath, e);
@@ -143,6 +148,14 @@ public class AEMDispatcherPathsActiveScanner extends AbstractHostPlugin {
             }
         }
 
+    }
+
+    private void raiseAlert(final HttpMessage newRequest, final int statusCode) {
+        if (statusCode >= 200 && statusCode < 399) {
+            raiseAlert(newRequest, "pathexposed");
+        } else {
+            raiseAlert(newRequest, "pathmaybeexposed");
+        }
     }
 
     public void raiseAlert(HttpMessage newRequest, String message) {
