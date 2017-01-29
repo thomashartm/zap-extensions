@@ -153,11 +153,11 @@ public class AEMDispatcherPathsActiveScanner extends AbstractHostPlugin {
                 getName(), // Name
                 getDescription(), // Description
                 getBaseMsg().getRequestHeader().getURI().toString(), // Original URI
-                null, // Param
-                "", // Attack
+                "", // Param
+                newRequest.getRequestHeader().getURI().toString(), // Attack
                 Constant.messages.getString(MESSAGE_PREFIX + "otherinfo", otherInfoDetail, newUri), // OtherInfo
                 getSolution(), // Solution
-                "", // Evidence
+                "Response header for request was: " + String.valueOf(newRequest.getResponseHeader().getStatusCode()), // Evidence
                 getCweId(), // CWE ID
                 getWascId(), // WASC ID
                 newRequest); // HTTPMessage
