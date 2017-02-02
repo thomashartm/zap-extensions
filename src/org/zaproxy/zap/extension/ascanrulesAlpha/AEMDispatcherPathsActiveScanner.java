@@ -127,15 +127,15 @@ public class AEMDispatcherPathsActiveScanner extends AbstractHostPlugin {
             log.info("Scanning  path " + prohibitedPath);
 
             try {
-                msg.getRequestHeader().getURI().setPath(prohibitedPath);
-                msg.getRequestHeader().setMethod(METHOD_GET);
+                newRequest.getRequestHeader().getURI().setPath(prohibitedPath);
+                newRequest.getRequestHeader().setMethod(METHOD_GET);
 
                 sendAndReceive(newRequest, false);
 
                 final int status = newRequest.getResponseHeader().getStatusCode();
 
                 if (HttpStatusCode.NOT_FOUND != status) {
-
+                    raiseAlert(newRequest, status);
                 } else {
                     if (log.isDebugEnabled()) {
                         log.debug("Path " + prohibitedPath + " not found. Dispatcher config seems to be correct.");
@@ -152,16 +152,16 @@ public class AEMDispatcherPathsActiveScanner extends AbstractHostPlugin {
 
     private void raiseAlert(final HttpMessage newRequest, final int statusCode) {
         if (statusCode >= 200 && statusCode < 399) {
-            raiseAlert(newRequest, "pathexposed");
+            raiseAlert(newRequest, "pathexposed", Alert.RISK_HIGH);
         } else {
-            raiseAlert(newRequest, "pathmaybeexposed");
+            raiseAlert(newRequest, "pathmaybeexposed", Alert.RISK_MEDIUM);
         }
     }
 
-    public void raiseAlert(HttpMessage newRequest, String message) {
+    public void raiseAlert(HttpMessage newRequest, String message, int level ) {
         String newUri = newRequest.getRequestHeader().getURI().toString();
         String otherInfoDetail = Constant.messages.getString(MESSAGE_PREFIX + "otherinfo." + message);
-        bingo(Alert.RISK_HIGH, // Risk
+        bingo(level, // Risk
                 Alert.CONFIDENCE_HIGH, // Confidence/Reliability
                 getName(), // Name
                 getDescription(), // Description
