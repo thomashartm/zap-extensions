@@ -20,9 +20,9 @@
 package org.zaproxy.zap.extension.ascanrules;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -54,15 +54,34 @@ import org.parosproxy.paros.model.Model;
 import org.parosproxy.paros.network.ConnectionParam;
 import org.parosproxy.paros.network.HttpMalformedHeaderException;
 import org.parosproxy.paros.network.HttpMessage;
-import org.testng.reporters.Files;
 import org.zaproxy.zap.extension.ScannerTestUtils;
 import org.zaproxy.zap.extension.ascan.ScanPolicy;
+import org.zaproxy.zap.extension.ruleconfig.RuleConfigParam;
 import org.zaproxy.zap.model.Tech;
 import org.zaproxy.zap.model.TechSet;
 //import org.zaproxy.zap.extension.ruleconfig.RuleConfigParam;
 import org.zaproxy.zap.utils.ClassLoaderUtil;
 
 public abstract class ActiveScannerTest<T extends AbstractPlugin> extends ScannerTestUtils {
+
+    /**
+     * The recommended maximum number of messages that a scanner can send in
+     * {@link org.parosproxy.paros.core.scanner.Plugin.AttackStrength#LOW AttackStrength.LOW}, per parameter being scanned.
+     */
+    protected static final int NUMBER_MSGS_ATTACK_STRENGTH_LOW = 6;
+
+    /**
+     * The recommended maximum number of messages that a scanner can send in
+     * {@link org.parosproxy.paros.core.scanner.Plugin.AttackStrength#MEDIUM AttackStrength.MEDIUM}, per parameter being
+     * scanned.
+     */
+    protected static final int NUMBER_MSGS_ATTACK_STRENGTH_MEDIUM = 12;
+
+    /**
+     * The recommended maximum number of messages that a scanner can send in
+     * {@link org.parosproxy.paros.core.scanner.Plugin.AttackStrength#HIGH AttackStrength.HIGH}, per parameter being scanned.
+     */
+    protected static final int NUMBER_MSGS_ATTACK_STRENGTH_HIGH = 24;
 
     private static final String INSTALL_PATH = "test/resources/install";
     private static final File HOME_DIR = new File("test/resources/home");
@@ -135,11 +154,9 @@ public abstract class ActiveScannerTest<T extends AbstractPlugin> extends Scanne
         ConnectionParam connectionParam = new ConnectionParam();
         
         ScannerParam scannerParam = new ScannerParam();
-        // Will need this once we go to the release after 2.5.0
-        // RuleConfigParam ruleConfigParam = new RuleConfigParam();
+        RuleConfigParam ruleConfigParam = new RuleConfigParam();
         Scanner parentScanner =
-                new Scanner(scannerParam, connectionParam, scanPolicy);
-        //, ruleConfigParam);
+                new Scanner(scannerParam, connectionParam, scanPolicy, ruleConfigParam);
 
         int port = 9090;
         nano = new HTTPDTestServer(port);
@@ -152,8 +169,8 @@ public abstract class ActiveScannerTest<T extends AbstractPlugin> extends Scanne
                 parentScanner, 
                 scannerParam, 
                 connectionParam, 
-                scanPolicy) {
-                //ruleConfigParam) {
+                scanPolicy,
+                ruleConfigParam) {
             @Override
             public void alertFound(Alert arg1) {
                 alertsRaised.add(arg1);
@@ -167,14 +184,12 @@ public abstract class ActiveScannerTest<T extends AbstractPlugin> extends Scanne
             }
 
             public void notifyNewMessage(Plugin plugin) {
-                // TODO for 2.5.0:
-                // super.notifyNewMessage(plugin);
+                super.notifyNewMessage(plugin);
                 countMessagesSent++;
             }
 
             public void notifyNewMessage(Plugin plugin, HttpMessage msg) {
-                // TODO for 2.5.0:
-                // super.notifyNewMessage(plugin, msg);
+                super.notifyNewMessage(plugin, msg);
                 httpMessagesSent.add(msg);
                 countMessagesSent++;
             }
@@ -236,9 +251,9 @@ public abstract class ActiveScannerTest<T extends AbstractPlugin> extends Scanne
     }
 
     public String getHtml(String name, Map<String, String> params) {
-        String fileName = BASE_RESOURCE_DIR + this.getClass().getSimpleName() + "/" + name;
-        try (FileInputStream fis = new FileInputStream(fileName)) {
-            String html = Files.readFile(fis);
+        File file = new File(BASE_RESOURCE_DIR + this.getClass().getSimpleName() + "/" + name);
+        try {
+            String html = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
             if (params != null) {
                 // Replace all of the supplied parameters
                 for (Entry<String, String> entry : params.entrySet()) {
@@ -247,7 +262,7 @@ public abstract class ActiveScannerTest<T extends AbstractPlugin> extends Scanne
             }
             return html;
         } catch (IOException e) {
-            System.err.println("Failed to read file " + new File(fileName).getAbsolutePath());
+            System.err.println("Failed to read file " + file.getAbsolutePath());
             throw new RuntimeException(e);
         }
     }

@@ -1,15 +1,19 @@
 <zapaddon>
 	<name>WebSockets</name>
-	<version>12</version>
+	<version>13</version>
 	<status>release</status>
 	<description>Allows you to inspect WebSocket communication.</description>
 	<author>ZAP Dev Team</author>
 	<url></url>
 	<changes>
 	<![CDATA[
-	Make breakpoint dialogues modal.<br>
-	Fix exception during the unload of the add-on, when in daemon mode.<br>
-	Correct fuzz location overlap detection with same start index.<br>
+	Fix context include/exclude pop up menu items.<br>
+	Fix/correct help buttons.<br>
+	Set fuzzer script type enabled by default (Issue 2997).<br>
+	Normalise the Session Properties panel Exclude from WebSockets.<br>
+	Implements WebSocketSenderListener.<br>
+	Use JRE decoder for UTF-8 conversions and log (debug) invalid payloads (related to Issue 3324).<br>
+	Focus WebSockets tab just once (Issue 3747).<br>
 	]]>
 	</changes>
 	<classnames>
@@ -38,6 +42,6 @@
 	<files>
 		<file>scripts/templates/websocketfuzzerprocessor/Fuzzer WebSocket Processor default template.js</file>
 	</files>
-	<not-before-version>2.4.3</not-before-version>
+	<not-before-version>2.6.0</not-before-version>
 	<not-from-version/>
 </zapaddon>

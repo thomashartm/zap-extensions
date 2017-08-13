@@ -1,15 +1,15 @@
 <zapaddon>
 	<name>Passive scanner rules</name>
-	<version>19</version>
+	<version>20</version>
 	<status>release</status>
 	<description>The release quality Passive Scanner rules</description>
 	<author>ZAP Dev Team</author>
 	<url/>
 	<changes>
 	<![CDATA[
-	Correct evidence of alerts raised by scanner "Application Error Disclosure".<br>
-	Fixed some false positives caused by scanner "Private Address Disclosure".<br>
-	Add support for cookie ignore rule.<br>
+	Fix false positive with Secure Pages Include Mixed Content and JavaScript files (Issue 3581).<br>
+	Fix false positive with Private IP Disclosure when target is a private IP on a non-standard port (Issue 3549).<br>
+	Fix false positive with X-Content-Type-Options Header Missing with certain system locales.<br>
 	]]>
 	</changes>
 	<extensions>

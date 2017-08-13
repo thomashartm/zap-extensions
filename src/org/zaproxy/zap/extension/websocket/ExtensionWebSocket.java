@@ -48,6 +48,7 @@ import org.parosproxy.paros.extension.ExtensionHookMenu;
 import org.parosproxy.paros.extension.ExtensionHookView;
 import org.parosproxy.paros.extension.ExtensionLoader;
 import org.parosproxy.paros.extension.SessionChangedListener;
+import org.parosproxy.paros.extension.ViewDelegate;
 import org.parosproxy.paros.extension.filter.ExtensionFilter;
 import org.parosproxy.paros.extension.manualrequest.ExtensionManualRequestEditor;
 import org.parosproxy.paros.extension.manualrequest.ManualRequestEditorDialog;
@@ -62,7 +63,7 @@ import org.parosproxy.paros.view.AbstractParamPanel;
 import org.parosproxy.paros.view.View;
 import org.zaproxy.zap.PersistentConnectionListener;
 import org.zaproxy.zap.ZapGetMethod;
-import org.zaproxy.zap.extension.brk.BreakpointMessageHandler;
+import org.zaproxy.zap.extension.brk.BreakpointMessageHandler2;
 import org.zaproxy.zap.extension.brk.ExtensionBreak;
 import org.zaproxy.zap.extension.help.ExtensionHelp;
 import org.zaproxy.zap.extension.httppanel.Message;
@@ -130,7 +131,13 @@ public class ExtensionWebSocket extends ExtensionAdaptor implements
 	 * List of observers where each element is informed on all channel's
 	 * messages.
 	 */
-	private Vector<WebSocketObserver> allChannelObservers;
+	private List<WebSocketObserver> allChannelObservers;
+	
+	/**
+	 * List of sender listeners where each element is informed on all channel's
+	 * messages.
+	 */
+	private List<WebSocketSenderListener> allChannelSenderListeners;
 
 	/**
 	 * Contains all proxies with their corresponding handshake message.
@@ -177,6 +184,16 @@ public class ExtensionWebSocket extends ExtensionAdaptor implements
 	 * This filter allows to change the bytes when passed through ZAP.
 	 */
 	private WebSocketFilter payloadFilter;
+
+	/**
+	 * Flag that controls if the WebSockets tab should be focused when a handshake message is received.
+	 * <p>
+	 * Current behaviour is to focus just once.
+	 * 
+	 * @see #initView(ViewDelegate)
+	 * @see #onHandshakeResponse(HttpMessage, Socket, ZapGetMethod)
+	 */
+	private boolean focusWebSocketsTabOnHandshake;
 	
 	public ExtensionWebSocket() {
 		super(NAME);
@@ -190,7 +207,8 @@ public class ExtensionWebSocket extends ExtensionAdaptor implements
 	public void init() {
 		super.init();
 		
-		allChannelObservers = new Vector<>();
+		allChannelObservers = new ArrayList<>();
+		allChannelSenderListeners = new ArrayList<>();
 		wsProxies = new HashMap<>();
 		config = new OptionsParamWebSocket();
 		
@@ -200,6 +218,13 @@ public class ExtensionWebSocket extends ExtensionAdaptor implements
 		mode = Control.getSingleton().getMode();
 	}
 	
+	@Override
+	public void initView(ViewDelegate view) {
+		super.initView(view);
+
+		focusWebSocketsTabOnHandshake = true;
+	}
+
     @Override
     public void databaseOpen(Database db) throws DatabaseException, DatabaseUnsupportedException {
 		table = new TableWebSocket();
@@ -290,7 +315,7 @@ public class ExtensionWebSocket extends ExtensionAdaptor implements
 			ExtensionBreak extBreak = (ExtensionBreak) extLoader.getExtension(ExtensionBreak.NAME);
 			if (extBreak != null) {
 				// setup custom breakpoint handler
-				BreakpointMessageHandler wsBrkMessageHandler = new WebSocketBreakpointMessageHandler(extBreak.getBreakPanel(), config);
+				BreakpointMessageHandler2 wsBrkMessageHandler = new WebSocketBreakpointMessageHandler(extBreak.getBreakpointManagementInterface(), config);
 				wsBrkMessageHandler.setEnabledBreakpoints(extBreak.getBreakpointsEnabledList());
 				
 				// listen on new messages such that breakpoints can apply
@@ -432,6 +457,34 @@ public class ExtensionWebSocket extends ExtensionAdaptor implements
 			throw new IllegalArgumentException("The parameter observer must not be null.");
 		}
 		allChannelObservers.remove(observer);
+		for (WebSocketProxy wsProxy : wsProxies.values()) {
+			wsProxy.removeObserver(observer);
+		}
+	}
+	
+	/**
+	 * Add an sender listener that is attached to every channel connected in future.
+	 * 
+	 * @param senderListener
+	 */
+	public void addAllChannelSenderListener(WebSocketSenderListener senderListener){
+		allChannelSenderListeners.add(senderListener);
+	}
+	
+	/**
+	 * Removes the given {@code senderListener}, that was attached to every channel connected.
+	 * 
+	 * @param senderListener the sender listener to be removed
+	 * @throws IllegalArgumentException if the given {@code senderListener} is {@code null}.
+	 */
+	public void removeAllChannelSenderListener(WebSocketSenderListener senderListener){
+		if (senderListener == null) {
+			throw new IllegalArgumentException("The parameter senderListener must not be null.");
+		}
+		allChannelSenderListeners.remove(senderListener);
+		for (WebSocketProxy wsProxy : wsProxies.values()) {
+			wsProxy.removeSenderListener(senderListener);
+		}
 	}
 
 	/**
@@ -473,9 +526,11 @@ public class ExtensionWebSocket extends ExtensionAdaptor implements
 		
 		if (httpMessage.isWebSocketUpgrade()) {
 			logger.debug("Got WebSockets upgrade request. Handle socket connection over to WebSockets extension.");
-			if (View.isInitialised()) {
+			if (focusWebSocketsTabOnHandshake) {
 				// Show the tab in case its been closed
 				this.getWebSocketPanel().setTabFocus();
+				// Don't constantly request focus on the tab, once is enough.
+				focusWebSocketsTabOnHandshake = false;
 			}
 			
 			if (method != null) {
@@ -532,6 +587,11 @@ public class ExtensionWebSocket extends ExtensionAdaptor implements
 			// set other observers and handshake reference, before starting listeners
 			for (WebSocketObserver observer : allChannelObservers) {
 				wsProxy.addObserver(observer);
+			}
+			
+			// set other sender listeners and handshake reference, before starting listeners
+			for (WebSocketSenderListener senderListener : allChannelSenderListeners) {
+				wsProxy.addSenderListener(senderListener);
 			}
 			
 			// wait until HistoryReference is saved to database

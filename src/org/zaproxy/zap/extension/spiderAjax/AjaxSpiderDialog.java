@@ -38,8 +38,8 @@ import org.parosproxy.paros.model.Model;
 import org.parosproxy.paros.model.Session;
 import org.parosproxy.paros.model.SiteNode;
 import org.zaproxy.zap.extension.selenium.Browser;
-import org.zaproxy.zap.extension.selenium.BrowserUI;
 import org.zaproxy.zap.extension.selenium.ExtensionSelenium;
+import org.zaproxy.zap.extension.selenium.ProvidedBrowserUI;
 import org.zaproxy.zap.extension.users.ExtensionUserManagement;
 import org.zaproxy.zap.model.Context;
 import org.zaproxy.zap.model.Target;
@@ -129,19 +129,17 @@ public class AjaxSpiderDialog extends StandardFieldsDialog {
             }
         });
         
-        if (getExtSelenium() != null) {
-        	List<Browser> browserList = getExtSelenium().getConfiguredBrowsers();
-        	List <String> browserNames = new ArrayList<String>(); 
-        	String defaultBrowser = null;
-        	for (Browser browser : browserList) {
-        		browserNames.add(extSel.getName(browser));
-        		if (browser.getId().equals(params.getBrowserId())) {
-        			defaultBrowser = extSel.getName(browser);
-        		}
-        	}
-        	
-    		this.addComboField(0, FIELD_BROWSER, browserNames, defaultBrowser);
-        }
+    	List<ProvidedBrowserUI> browserList = getExtSelenium().getProvidedBrowserUIList();
+    	List <String> browserNames = new ArrayList<String>(); 
+    	String defaultBrowser = null;
+    	for (ProvidedBrowserUI browser : browserList) {
+    		browserNames.add(browser.getName());
+    		if (browser.getBrowser().getId().equals(params.getBrowserId())) {
+    			defaultBrowser = browser.getName();
+    		}
+    	}
+    	
+		this.addComboField(0, FIELD_BROWSER, browserNames, defaultBrowser);
 
         // This option is always read from the 'global' options
         this.addCheckBoxField(0, FIELD_ADVANCED, params.isShowAdvancedDialog());
@@ -194,26 +192,27 @@ public class AjaxSpiderDialog extends StandardFieldsDialog {
     
     private ExtensionSelenium getExtSelenium() {
     	if (extSel == null) {
-    		extSel = (ExtensionSelenium) Control.getSingleton().getExtensionLoader().getExtension(ExtensionSelenium.NAME);
+    		extSel = Control.getSingleton().getExtensionLoader().getExtension(ExtensionSelenium.class);
     	}
     	return extSel;
     }
 
     /**
-     * Updates the choices available in "Browser" combo box, based on the currently configured browsers.
+     * Updates the choices available in "Browser" combo box, based on the currently available browsers.
      *
      * @see ExtensionSelenium#getConfiguredBrowsers()
      */
     public void updateBrowsers() {
-        List<Browser> browserList = getExtSelenium().getConfiguredBrowsers();
+        List<ProvidedBrowserUI> browserList = getExtSelenium().getProvidedBrowserUIList();
         List<String> browserNames = new ArrayList<>();
         String defaultBrowser = null;
-        for (Browser browser : browserList) {
-            browserNames.add(extSel.getName(browser));
-            if (browser.getId().equals(params.getBrowserId())) {
-                defaultBrowser = extSel.getName(browser);
+        for (ProvidedBrowserUI browser : browserList) {
+            browserNames.add(browser.getName());
+            if (browser.getBrowser().getId().equals(params.getBrowserId())) {
+                defaultBrowser = browser.getName();
             }
         }
+        
         setComboFields(FIELD_BROWSER, browserNames, defaultBrowser);
     }
 
@@ -345,9 +344,9 @@ public class AjaxSpiderDialog extends StandardFieldsDialog {
     public void save() {
     	AjaxSpiderParam params = this.extension.getAjaxSpiderParam().clone();
     	
-        Browser selectedBrowser = getSelectedBrowser();
+        String selectedBrowser = getSelectedBrowser();
         if (selectedBrowser != null) {
-            params.setBrowserId(selectedBrowser.getId());
+            params.setBrowserId(selectedBrowser);
         }
 
         if (this.getBoolValue(FIELD_ADVANCED)) {
@@ -405,16 +404,16 @@ public class AjaxSpiderDialog extends StandardFieldsDialog {
      *
      * @return the selected browser, {@code null} if none selected
      */
-    private Browser getSelectedBrowser() {
+    private String getSelectedBrowser() {
         if (isEmptyField(FIELD_BROWSER)) {
             return null;
         }
 
         String browserName = this.getStringValue(FIELD_BROWSER);
-        List<BrowserUI> browserList = getExtSelenium().getBrowserUIList();
-        for (BrowserUI bui : browserList) {
+        List<ProvidedBrowserUI> browserList = getExtSelenium().getProvidedBrowserUIList();
+        for (ProvidedBrowserUI bui : browserList) {
             if (browserName.equals(bui.getName())) {
-                return bui.getBrowser();
+                return bui.getBrowser().getId();
             }
         }
         return null;
@@ -483,12 +482,12 @@ public class AjaxSpiderDialog extends StandardFieldsDialog {
             }
         }
 
-        Browser selectedBrowser = getSelectedBrowser();
+        String selectedBrowser = getSelectedBrowser();
         if (selectedBrowser == null) {
             return Constant.messages.getString("spiderajax.scandialog.nobrowser.error");
         }
 
-        if (Browser.PHANTOM_JS.getId() == selectedBrowser.getId()) {
+        if (Browser.PHANTOM_JS.getId() == selectedBrowser) {
             String host = startUri.getHost();
             if ("localhost".equalsIgnoreCase(host) || "127.0.0.1".equals(host) || "[::1]".equals(host)) {
                 return Constant.messages.getString("spiderajax.warn.message.phantomjs.bug.invalid.target");

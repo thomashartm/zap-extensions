@@ -57,8 +57,6 @@ public class SpiderPanel extends AbstractPanel implements SpiderListener {
 	private static final long serialVersionUID = 1L;
 	private static final Logger logger = Logger.getLogger(SpiderPanel.class);
 	
-	private static final String RESULTS_TABLE_NAME = "AjaxSpiderResultsTable";
-
 	private javax.swing.JScrollPane scrollLog = null;
 	private javax.swing.JPanel AJAXSpiderPanel = null;
 	private javax.swing.JToolBar panelToolbar = null;
@@ -233,7 +231,7 @@ public class SpiderPanel extends AbstractPanel implements SpiderListener {
 			startScanButton = new JButton();
 			startScanButton.setText(this.extension.getMessages().getString("spiderajax.toolbar.button.start"));
 			startScanButton.setIcon(new ImageIcon(SpiderPanel.class.getResource("/resource/icon/16/spiderAjax.png")));
-			startScanButton.setEnabled(false);
+			startScanButton.setEnabled(!Mode.safe.equals(Control.getSingleton().getMode()));
 			startScanButton.addActionListener(new ActionListener () {
 
 				@Override
@@ -253,9 +251,9 @@ public class SpiderPanel extends AbstractPanel implements SpiderListener {
 	 * @param msg the http message
 	 * @param url the targeted url
 	 */
-	private boolean addHistoryUrl(HistoryReference r, HttpMessage msg, String url){
+	private boolean addHistoryUrl(HistoryReference r, HttpMessage msg, String url, ResourceState state){
 			if(isNewUrl(r, msg)){
-				this.spiderResultsTableModel.addHistoryReference(r);
+				this.spiderResultsTableModel.addHistoryReference(r, state);
 				return true;
 			}
 			return false;
@@ -371,8 +369,7 @@ public class SpiderPanel extends AbstractPanel implements SpiderListener {
 
 	private HistoryReferencesTable getSpiderResultsTable() {
 	    if (spiderResultsTable == null) {
-	        spiderResultsTable = new HistoryReferencesTable(spiderResultsTableModel);
-	        spiderResultsTable.setName(RESULTS_TABLE_NAME);
+	        spiderResultsTable = new AjaxSpiderResultsTable(spiderResultsTableModel);
 	    }
 	    return spiderResultsTable;
 	}
@@ -408,7 +405,7 @@ public class SpiderPanel extends AbstractPanel implements SpiderListener {
 		visitedUrls.clear();
 		this.targetSite = displayName;
 		try {
-			new Thread(runnable).start();
+			new Thread(runnable, "ZAP-AjaxSpider").start();
 		} catch (Exception e) {
 			logger.error(e);
 		}
@@ -468,14 +465,23 @@ public class SpiderPanel extends AbstractPanel implements SpiderListener {
 		stopScan();
 		spiderResultsTableModel.clear();
 		visitedUrls.clear();
+
+		if (View.isInitialised()) {
+			this.foundCount = 0;
+			this.foundLabel.setText(Integer.toString(this.foundCount));
+		}
 	}
 	
+	void unload() {
+		spiderResultsTableModel.unload();
+	}
 	
 	public void sessionModeChanged(Mode mode) {
 		switch (mode) {
 		case standard:
 		case protect:
 		case attack:
+			this.getStartScanButton().setEnabled(!extension.isSpiderRunning());
 			break;
 		case safe:
 			stopScan();
@@ -487,8 +493,8 @@ public class SpiderPanel extends AbstractPanel implements SpiderListener {
 	}
 
 	@Override
-	public void foundMessage(HistoryReference historyReference, HttpMessage httpMessage) {
-		boolean added = addHistoryUrl(historyReference, httpMessage, targetSite);
+	public void foundMessage(HistoryReference historyReference, HttpMessage httpMessage, ResourceState state) {
+		boolean added = addHistoryUrl(historyReference, httpMessage, targetSite, state);
 		if (View.isInitialised() && added) {
 			foundCount++;
 			this.foundLabel.setText(Integer.toString(this.foundCount));

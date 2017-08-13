@@ -20,28 +20,41 @@
 			<th>Padrão</th>
 		</tr>
 		<tr>
-			<td>ChromeDriver</td>
-			<td>Isso permite que você selecione o local do ChromeDriver.</td>
-			<td align="center">(Nenhum)</td>
+			<th colspan="3">WebDrivers</th>
 		</tr>
 		<tr>
-			<td>Firefox binary</td>
-			<td>This allows you to select the location of Firefox binary (for example, to use
-				other version than the system default).</td>
-			<td align="center">(Nenhum)</td>
+			<td>ChromeDriver</td>
+			<td>Isso permite que você selecione o local do ChromeDriver.</td>
+			<td align="center">O caminho para o pacote WebDriver, se disponível.</td>
+		</tr>
+		<tr>
+			<td>geckodriver</td>
+			<td>Isso permite que você selecione o local do geckodriver (driver de Firefox).</td>
+			<td align="center">O caminho para o pacote WebDriver, se disponível.</td>
 		</tr>
 		<tr>
 			<td>IEDriverServer</td>
-			<td>This allows you to select the location of IEDriverServer.</td>
+			<td>Isso permite que você selecione o local do IEDriverServer.</td>
+			<td align="center">O caminho para o pacote WebDriver, se disponível.</td>
+		</tr>
+		<tr>
+			<th colspan="3">Binários</th>
+		</tr>
+		<tr>
+			<td>Firefox</td>
+			<td>Isso permite que você selecione a localização do binário do Firefox (por exemplo, para usar uma versão diferente do padrão do sistema).</td>
 			<td align="center">(Nenhum)</td>
 		</tr>
 		<tr>
-			<td>PhantomJS binary</td>
-			<td>This allows you to select the location of PhantomJS binary.</td>
-			<td align="center">(None)</td>
+			<td>PhantomJS</td>
+			<td>Isso permite que você selecione o local do binário do PhantomJS.</td>
+			<td align="center">(Nenhum)</td>
 		</tr>
 	</table>
-	<p>Também é possível definir os locais acima usando as propriedades de sistema do Java, caso em que as opções acima serão substituídas e assumirão esses valores.
+	<strong>Nota:</strong> Também é possível definir os locais acima (binários e WebDrivers) usando as propriedades de sistema do Java, caso em que as opções acima serão substituídas e os valores mostrados em vez disso.
+
+	<h2>Pacote WebDrivers</h2>
+	ZAP oferece Complementos com o WebDrivers. Quando esses Complementos são instalados o ZAP tenta usar o pacote WebDrivers por padrão. Alguns OS podem não ter um WebDriver para alguns dos navegadores, e nesses casos, o ZAP informará que não há nenhum WebDriver disponível. O pacote WebDrivers também pode ser (re) definido com o botão de 'Pacotes/Bundle' (por exemplo, se outro WebDriver foi definido manualmente).
 	<h2>Veja também</h2>
 	<table>
 		<tr>

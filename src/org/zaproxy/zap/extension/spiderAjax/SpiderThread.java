@@ -32,15 +32,17 @@ import org.apache.commons.httpclient.URIException;
 import org.apache.log4j.Logger;
 import org.parosproxy.paros.control.Control;
 import org.parosproxy.paros.core.proxy.OverrideMessageProxyListener;
+import org.parosproxy.paros.core.proxy.ProxyListener;
 import org.parosproxy.paros.model.HistoryReference;
 import org.parosproxy.paros.model.Session;
 import org.parosproxy.paros.network.HttpHeader;
 import org.parosproxy.paros.network.HttpMalformedHeaderException;
 import org.parosproxy.paros.network.HttpMessage;
 import org.parosproxy.paros.network.HttpResponseHeader;
+import org.parosproxy.paros.network.HttpSender;
 import org.parosproxy.paros.view.View;
-import org.zaproxy.zap.extension.selenium.Browser;
 import org.zaproxy.zap.extension.selenium.ExtensionSelenium;
+import org.zaproxy.zap.extension.spiderAjax.SpiderListener.ResourceState;
 import org.zaproxy.zap.extension.spiderAjax.internal.ProxyServer;
 import org.zaproxy.zap.network.HttpResponseBody;
 
@@ -48,6 +50,7 @@ import com.crawljax.browser.EmbeddedBrowser;
 import com.crawljax.browser.WebDriverBackedEmbeddedBrowser;
 import com.crawljax.core.CrawljaxRunner;
 import com.crawljax.core.configuration.BrowserConfiguration;
+import com.crawljax.core.configuration.CrawlScope;
 import com.crawljax.core.configuration.CrawljaxConfiguration;
 import com.crawljax.core.configuration.CrawljaxConfiguration.CrawljaxConfigurationBuilder;
 import com.crawljax.core.configuration.ProxyConfiguration;
@@ -75,6 +78,7 @@ public class SpiderThread implements Runnable {
 	private final String targetHost;
 	private ProxyServer proxy;
 	private int proxyPort;
+	private final ExtensionAjax extension;
 
 	/**
 	 * Constructs a {@code SpiderThread} for the given target.
@@ -104,12 +108,14 @@ public class SpiderThread implements Runnable {
 		exclusionList.addAll(session.getExcludeFromSpiderRegexs());
 		exclusionList.addAll(session.getGlobalExcludeURLRegexs());
 		this.targetHost = target.getStartUri().getHost();
+		this.extension = extension;
 
 		createOutOfScopeResponse(extension.getMessages().getString("spiderajax.outofscope.response"));
 
 		proxy = new AjaxProxyServer();
 		proxy.setConnectionParam(extension.getModel().getOptionsParam().getConnectionParam());
 		proxy.addOverrideMessageProxyListener(new SpiderProxyListener());
+		proxy.addProxyListener(new SpiderProxyResponseListener());
 	}
 
 	private void createOutOfScopeResponse(String response) {
@@ -153,6 +159,15 @@ public class SpiderThread implements Runnable {
 	public CrawljaxConfiguration createCrawljaxConfiguration() {
 		CrawljaxConfigurationBuilder configurationBuilder = CrawljaxConfiguration.builderFor(target.getStartUri().toString());
 
+		// For Crawljax assume everything in scope, SpiderProxyListener does the actual scope checks.
+		configurationBuilder.setCrawlScope(new CrawlScope() {
+
+			@Override
+			public boolean isInScope(String url) {
+				return true;
+			}
+		});
+
 		configurationBuilder.setProxyConfig(ProxyConfiguration.manualProxyOn(LOCAL_PROXY_IP, proxyPort));
 
 		configurationBuilder.setBrowserConfig(new BrowserConfiguration(
@@ -193,7 +208,7 @@ public class SpiderThread implements Runnable {
 	 */
 	@Override
 	public void run() {
-		logger.info("Running Crawljax: " + displayName);
+		logger.info("Running Crawljax (with " + target.getOptions().getBrowserId()  + "): " + displayName);
 		this.running = true;
 		notifyListenersSpiderStarted();
 		logger.info("Starting proxy...");
@@ -208,8 +223,8 @@ public class SpiderThread implements Runnable {
                 ExtensionSelenium extSelenium = Control.getSingleton()
                         .getExtensionLoader()
                         .getExtension(ExtensionSelenium.class);
-                Browser browser = Browser.getBrowserWithId(target.getOptions().getBrowserId());
-                View.getSingleton().showWarningDialog(extSelenium.getWarnMessageFailedToStart(browser));
+                String providedBrowserId = target.getOptions().getBrowserId();
+                View.getSingleton().showWarningDialog(extSelenium.getWarnMessageFailedToStart(providedBrowserId, e));
             }
 		} catch (Exception e) {
 			logger.error(e, e);
@@ -251,9 +266,9 @@ public class SpiderThread implements Runnable {
 		}
 	}
 
-	private void notifySpiderListenersFoundMessage(HistoryReference historyReference, HttpMessage httpMessage) {
+	private void notifySpiderListenersFoundMessage(HistoryReference historyReference, HttpMessage httpMessage, ResourceState state) {
 		for (SpiderListener listener : spiderListeners) {
-			listener.foundMessage(historyReference, httpMessage);
+			listener.foundMessage(historyReference, httpMessage, state);
 		}
 	}
 
@@ -272,36 +287,38 @@ public class SpiderThread implements Runnable {
 
 		@Override
 		public boolean onHttpRequestSend(HttpMessage httpMessage) {
-			boolean excluded = false;
+			ResourceState state = ResourceState.PROCESSED;
 			final String uri = httpMessage.getRequestHeader().getURI().toString();
 			if (httpPrefixUriValidator != null && !httpPrefixUriValidator.isValid(httpMessage.getRequestHeader().getURI())) {
 				logger.debug("Excluding request [" + uri + "] not under subtree.");
-				excluded = true;
+				state = ResourceState.OUT_OF_SCOPE;
 			} else if (target.getContext() != null) {
 				if (!target.getContext().isInContext(uri)) {
 					logger.debug("Excluding request [" + uri + "] not in specified context.");
-					excluded = true;
+					state = ResourceState.OUT_OF_CONTEXT;
 				}
 			} else if (target.isInScopeOnly()) {
 				if (!session.isInScope(uri)) {
 					logger.debug("Excluding request [" + uri + "] not in scope.");
-					excluded = true;
+					state = ResourceState.OUT_OF_SCOPE;
 				}
 			} else if (!targetHost.equalsIgnoreCase(httpMessage.getRequestHeader().getHostName())) {
 				logger.debug("Excluding request [" + uri + "] not on target site [" + targetHost + "].");
-				excluded = true;
+				state = ResourceState.OUT_OF_SCOPE;
 			}
-			if (!excluded) {
+			if (state == ResourceState.PROCESSED) {
 				for (String regex : exclusionList) {
 					if (Pattern.matches(regex, uri)) {
 						logger.debug("Excluding request [" + uri + "] matched regex [" + regex + "].");
-						excluded = true;
+						state = ResourceState.EXCLUDED;
 					}
 				}
 			}
 
-			if (excluded) {
+			if (state != ResourceState.PROCESSED) {
 				setOutOfScopeResponse(httpMessage);
+				// TODO Replace with HistoryReference.TYPE_SPIDER_AJAX_TEMPORARY.
+				notifyMessage(httpMessage, 18, state);
 				return true;
 			}
 
@@ -311,6 +328,8 @@ public class SpiderThread implements Runnable {
 
 		private void setOutOfScopeResponse(HttpMessage httpMessage) {
 			try {
+				httpMessage.setTimeSentMillis(System.currentTimeMillis());
+				httpMessage.setTimeElapsedMillis(0);
 				httpMessage.setResponseHeader(outOfScopeResponseHeader.toString());
 			} catch (HttpMalformedHeaderException ignore) {
 				// Setting a valid response header.
@@ -320,24 +339,60 @@ public class SpiderThread implements Runnable {
 
 		@Override
 		public boolean onHttpResponseReceived(final HttpMessage httpMessage) {
-			try {
-				final HistoryReference historyRef = new HistoryReference(session, HistoryReference.TYPE_SPIDER_AJAX, httpMessage);
-				historyRef.setCustomIcon("/resource/icon/10/spiderAjax.png", true);
-				EventQueue.invokeLater(new Runnable() {
-
-					@Override
-					public void run() {
-						session.getSiteTree().addPath(historyRef, httpMessage);
-						notifySpiderListenersFoundMessage(historyRef, httpMessage);
-					}
-				});
-			} catch (Exception e) {
-				logger.error(e);
-			}
-
 			return false;
 		}
 	}
+
+    private void notifyMessage(final HttpMessage httpMessage, final int historyType, final ResourceState state) {
+        try {
+            if (extension.getView() != null && !EventQueue.isDispatchThread()) {
+                EventQueue.invokeLater(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        notifyMessage(httpMessage, historyType, state);
+                    }
+                });
+                return;
+            }
+
+            HistoryReference historyRef = new HistoryReference(session, historyType, httpMessage);
+            if (state == ResourceState.PROCESSED) {
+                historyRef.setCustomIcon("/resource/icon/10/spiderAjax.png", true);
+                session.getSiteTree().addPath(historyRef, httpMessage);
+            }
+
+            notifySpiderListenersFoundMessage(historyRef, httpMessage, state);
+        } catch (Exception e) {
+            logger.error(e);
+        }
+    }
+
+    private class SpiderProxyResponseListener implements ProxyListener {
+
+        @Override
+        public int getArrangeableListenerOrder() {
+            return 0;
+        }
+
+        @Override
+        public boolean onHttpRequestSend(HttpMessage httpMessage) {
+            return true;
+        }
+
+        @Override
+        public boolean onHttpResponseReceive(HttpMessage httpMessage) {
+            notifyMessage(httpMessage, HistoryReference.TYPE_SPIDER_AJAX, getResourceState(httpMessage));
+            return true;
+        }
+
+        private ResourceState getResourceState(HttpMessage httpMessage) {
+            if (!httpMessage.isResponseFromTargetHost()) {
+                return ResourceState.IO_ERROR;
+            }
+            return ResourceState.PROCESSED;
+        }
+    }
 
 	// NOTE: The implementation of this class was copied from com.crawljax.browser.WebDriverBrowserBuilder since it's not
 	// possible to correctly extend it because of DI issues.
@@ -350,11 +405,11 @@ public class SpiderThread implements Runnable {
 		@Inject
 		private Plugins plugins;
 
-		private final String browserId;
+		private final String providedBrowserId;
 
-		public AjaxSpiderBrowserBuilder(String browserId) {
+		public AjaxSpiderBrowserBuilder(String providedBrowserId) {
 			super();
-			this.browserId = browserId;
+			this.providedBrowserId = providedBrowserId;
 		}
 
 		/**
@@ -372,8 +427,10 @@ public class SpiderThread implements Runnable {
 			long crawlWaitReload = configuration.getCrawlRules().getWaitAfterReloadUrl();
 			long crawlWaitEvent = configuration.getCrawlRules().getWaitAfterEvent();
 
-			EmbeddedBrowser embeddedBrowser = WebDriverBackedEmbeddedBrowser.withDriver(ExtensionSelenium.getWebDriver(
-					Browser.getBrowserWithId(browserId),
+			ExtensionSelenium extSelenium = Control.getSingleton().getExtensionLoader().getExtension(ExtensionSelenium.class);
+			EmbeddedBrowser embeddedBrowser = WebDriverBackedEmbeddedBrowser.withDriver(extSelenium.getWebDriver(
+					HttpSender.SPIDER_INITIATOR,
+					providedBrowserId,
 					configuration.getProxyConfiguration().getHostname(),
 					configuration.getProxyConfiguration().getPort()), filterAttributes, crawlWaitEvent, crawlWaitReload);
 			plugins.runOnBrowserCreatedPlugins(embeddedBrowser);

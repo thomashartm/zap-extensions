@@ -132,6 +132,7 @@ public class ExtensionAjax extends ExtensionAdaptor {
     public void unload() {
         if (getView() != null) {
             getSpiderPanel().stopScan();
+            getSpiderPanel().unload();
             
             getView().getMainFrame().getMainFooterPanel().removeFooterToolbarRightLabel(getSpiderPanel().getScanStatus().getCountLabel());
         }
@@ -218,7 +219,7 @@ public class ExtensionAjax extends ExtensionAdaptor {
 			ExtensionSelenium extSelenium = Control.getSingleton()
 					.getExtensionLoader()
 					.getExtension(ExtensionSelenium.class);
-			optionsAjaxSpider = new OptionsAjaxSpider(this.getMessages(), extSelenium.createBrowsersComboBoxModel());
+			optionsAjaxSpider = new OptionsAjaxSpider(this.getMessages(), extSelenium.createProvidedBrowsersComboBoxModel());
 		}
 		return optionsAjaxSpider;
 	}
@@ -449,7 +450,8 @@ public class ExtensionAjax extends ExtensionAdaptor {
 		}
 
 		@Override
-		public void foundMessage(HistoryReference historyReference, HttpMessage httpMessage) {
+		public void foundMessage(HistoryReference historyReference, HttpMessage httpMessage, ResourceState state) {
+			// Nothing to do.
 		}
 
 		@Override
