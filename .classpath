@@ -2,29 +2,36 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="test"/>
+	<classpathentry kind="lib" path="lib/BrowserLauncher2-1_3.jar"/>
+	<classpathentry kind="lib" path="lib/commons-codec-1.9.jar"/>
 	<classpathentry kind="lib" path="lib/commons-collections-3.2.2.jar"/>
 	<classpathentry kind="lib" path="lib/commons-configuration-1.9.jar"/>
 	<classpathentry kind="lib" path="lib/commons-httpclient-3.1.jar"/>
+	<classpathentry kind="lib" path="lib/commons-io-2.4.jar"/>
 	<classpathentry kind="lib" path="lib/commons-lang-2.6.jar"/>
-	<classpathentry kind="lib" path="/zap-extensions/lib/crawljax-core-3.6.jar"/>
 	<classpathentry kind="lib" path="lib/diffutils-1.2.1.jar"/>
-	<classpathentry kind="lib" path="lib/fuzz-beta-4.zap"/>
-	<classpathentry kind="lib" path="/zap-extensions/lib/guice-3.0.jar"/>
+	<classpathentry kind="lib" path="lib/dom4j-1.6.1.jar"/>
+	<classpathentry kind="lib" path="lib/dvAPI_5.0.3.jar"/>
+	<classpathentry kind="lib" path="lib/flex-messaging-common.jar"/>
+	<classpathentry kind="lib" path="lib/flex-messaging-core.jar"/>
+	<classpathentry kind="lib" path="lib/groovy-2.0.4.jar"/>
+	<classpathentry kind="lib" path="lib/groovy-xml-2.0.4.jar"/>
 	<classpathentry kind="lib" path="lib/hsqldb-2.3.3.jar"/>
-	<classpathentry kind="lib" path="/zap-extensions/lib/htmlunit-2.15.jar"/>
-	<classpathentry kind="lib" path="/zap-extensions/lib/javax.inject-1.jar"/>
 	<classpathentry kind="lib" path="lib/jdom.jar"/>
 	<classpathentry kind="lib" path="lib/jericho-html-3.1.jar"/>
+	<classpathentry kind="lib" path="lib/jfxrt.jar"/>
+	<classpathentry kind="lib" path="lib/jgraphx-2.0.0.1.jar"/>
+	<classpathentry kind="lib" path="lib/joda-time-2.2.jar"/>
 	<classpathentry kind="lib" path="lib/json-lib-2.4-jdk15.jar"/>
+	<classpathentry kind="lib" path="lib/json-simple-1.1.1.jar"/>
+	<classpathentry kind="lib" path="lib/jsoup-1.7.2.jar"/>
 	<classpathentry kind="lib" path="lib/log4j-1.2.16.jar"/>
-	<classpathentry kind="lib" path="/zap-extensions/lib/odfdom-java-0.8.8-incubating.jar"/>
+	<classpathentry kind="lib" path="lib/org.eclipse.birt.runtime_4.2.2.v20130216-1152.jar"/>
+	<classpathentry kind="lib" path="lib/org.jwall.web.audit-0.2.15.jar"/>
 	<classpathentry kind="lib" path="lib/rsyntaxtextarea-2.5.8.jar"/>
-	<classpathentry kind="lib" path="/zap-extensions/lib/simple-odf-0.7-incubating.jar"/>
+	<classpathentry kind="lib" path="lib/soa-model-core-1.4.1.4.jar"/>
 	<classpathentry kind="lib" path="lib/swingx-all-1.6.4.jar"/>
-	<classpathentry kind="lib" path="/zap-extensions/lib/xercesImpl.jar"/>
-	<classpathentry kind="lib" path="/zap-extensions/lib/xml-apis.jar"/>
-	<classpathentry kind="lib" path="/zap-extensions/lib/xslt-runner-1.2.1-incubating.jar"/>
-	<classpathentry kind="lib" path="/zap-extensions/lib/xslt-runner-task-1.2.1-incubating.jar"/>
+	<classpathentry kind="lib" path="lib/ZAPSNITerminator.jar"/>
 	<classpathentry kind="lib" path="testlib/cglib-nodep-2.2.jar"/>
 	<classpathentry kind="lib" path="testlib/hamcrest-all-1.3.jar"/>
 	<classpathentry kind="lib" path="testlib/javassist-3.16.1-GA.jar"/>
@@ -33,17 +40,34 @@
 	<classpathentry kind="lib" path="testlib/objenesis-1.2.jar"/>
 	<classpathentry kind="lib" path="testlib/powermock-mockito-1.4.12-full.jar"/>
 	<classpathentry kind="lib" path="testlib/simple-5.0.2.jar"/>
-	<classpathentry kind="lib" path="lib/selenium-release-3.zap"/>
-	<classpathentry kind="lib" path="lib/zap-2.5.0.jar"/>
+	<classpathentry kind="lib" path="lib/selenium-release-12.zap"/>
 	<classpathentry kind="lib" path="lib/json-20160212.jar"/>
 	<classpathentry kind="lib" path="lib/commons-compress-1.13.jar"/>
-	<classpathentry kind="lib" path="lib/commons-compress-1.13.jar"/>
+	<classpathentry kind="lib" path="lib/licence.jar"/>
+	<classpathentry kind="lib" path="lib/jackson-annotations-2.4.5.jar"/>
+	<classpathentry kind="lib" path="lib/jackson-core-2.4.5.jar"/>
+	<classpathentry kind="lib" path="lib/jackson-databind-2.4.5.jar"/>
+	<classpathentry kind="lib" path="lib/jackson-dataformat-yaml-2.4.5.jar"/>
+	<classpathentry kind="lib" path="lib/jackson-datatype-joda-2.4.5.jar"/>
+	<classpathentry kind="lib" path="lib/salvation-2.3.0.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-api-1.6.3.jar"/>
+	<classpathentry kind="lib" path="lib/snakeyaml-1.12.jar"/>
+	<classpathentry kind="lib" path="lib/swagger-annotations-1.5.8.jar"/>
+	<classpathentry kind="lib" path="lib/swagger-core-1.5.8.jar"/>
+	<classpathentry kind="lib" path="lib/swagger-models-1.5.8.jar"/>
+	<classpathentry kind="lib" path="lib/swagger-parser-1.0.19.jar"/>
+	<classpathentry kind="lib" path="testlib/nanohttpd-webserver-2.1.1-jar-with-dependencies.jar"/>
+	<classpathentry kind="lib" path="lib/zap-2.6.0.jar"/>
+	<classpathentry kind="lib" path="lib/swagger-compat-spec-parser-1.0.19.jar"/>
+	<classpathentry kind="lib" path="lib/jackson-coreutils-1.8.jar"/>
+	<classpathentry kind="lib" path="lib/msg-simple-1.1.jar"/>
+	<classpathentry kind="lib" path="lib/btf-1.2.jar"/>
+	<classpathentry kind="lib" path="lib/json-patch-1.6.jar"/>
+	<classpathentry kind="lib" path="lib/jxbrowser-6.17.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="lib/commons-codec-1.9.jar"/>
-	<classpathentry kind="lib" path="/zap-extensions/lib/zap-2.4.3.jar"/>
-	<classpathentry kind="lib" path="/zap-extensions/lib/selenium-server-standalone-2.53.1.jar"/>
-	<classpathentry kind="lib" path="/zap-extensions/lib/htmlunit-driver-standalone-2.21.jar"/>
-	<classpathentry kind="lib" path="/zap-extensions/lib/slf4j-api-1.7.5.jar"/>
-	<classpathentry kind="lib" path="/zap-extensions/lib/jgrapht-0.8.3.jar"/>
+	<classpathentry kind="lib" path="lib/metadata-extractor-2.10.1.jar"/>
+	<classpathentry kind="lib" path="lib/xmpcore-5.1.2.jar"/>
+	<classpathentry kind="lib" path="lib/github-api-1.75.jar"/>
+	<classpathentry kind="lib" path="lib/j2bugzilla-2.2.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

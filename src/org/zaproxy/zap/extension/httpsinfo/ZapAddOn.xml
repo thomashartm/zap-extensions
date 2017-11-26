@@ -1,13 +1,16 @@
 <zapaddon>
 	<name>HttpsInfo</name>
-	<version>8</version>
+	<version>10</version>
 	<status>alpha</status>
-	<description>Displays HTTPS status information.</description>
+	<description>Displays HTTPS configuration information.</description>
 	<author>ZAP Dev Team</author>
+	<dependencies>
+		<javaversion>1.8</javaversion>
+	</dependencies>
 	<url></url>
 	<changes>
 	<![CDATA[
-	Warn the user if results may be inaccurate due to ZAP being configured to use an outbound proxy.<br>
+	Upgrade to use DeepViolet 5.0.3, which provides some minor logging changes.<br>
 	]]>
 	</changes>
 	<extensions>

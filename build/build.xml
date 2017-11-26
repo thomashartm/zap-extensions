@@ -17,7 +17,7 @@
 	<property name="wiki.dir" location="../../zap-extensions-wiki" />
 	<!-- This assumes you also have the zaproxy project -->
 	<property name="zap.plugin.dir" location="../../zaproxy/src/plugin" />
-	<property name="zap.download.url" value="https://github.com/zaproxy/zap-extensions/releases/download/2.5" />
+	<property name="zap.download.url" value="https://github.com/zaproxy/zap-extensions/releases/download/2.6" />
 
 	<path id="build.classpath">
 		   <fileset dir="${build.lib.dir}" includes="*.jar"/>
@@ -40,11 +40,19 @@
 		<delete dir="${test.results.dir}" includeEmptyDirs="true" />
 	</target>
 
-	<target name="clean-webdrivers">
+	<target name="clean-jxbrowser">
 		<!-- Not included in 'clean' as thats called when each add-on is built -->
-		<delete dir="../src/org/zaproxy/zap/extension/webdriverlinux/files"  includeEmptyDirs="true" />
-		<delete dir="../src/org/zaproxy/zap/extension/webdrivermacos/files"  includeEmptyDirs="true" />
-		<delete dir="../src/org/zaproxy/zap/extension/webdriverwindows/files"  includeEmptyDirs="true" />
+		<delete dir="../src/org/zaproxy/zap/extension/jxbrowserlinux64/lib"  includeEmptyDirs="true" />
+		<delete dir="../src/org/zaproxy/zap/extension/jxbrowsermacos/lib"  includeEmptyDirs="true" />
+		<delete dir="../src/org/zaproxy/zap/extension/jxbrowserwindows/lib"  includeEmptyDirs="true" />
+	</target>
+
+	<target name="clean-files"  description="delete files downloaded by download-files">
+		<antcall target="clean-jxbrowser"/>
+	</target>
+
+	<target name="download-files" description="download the files required by any of the add-ons">
+		<antcall target="download-jxbrowser"/>
 	</target>
 
 	<target name="init">
@@ -59,17 +67,8 @@
 	<target name="compile" depends="init" description="compile the source">
 		<echo message="Compiling the source..." />
 		
-		<!-- Compile with debug information if the property "javac.debug" is set to true -->
-		<local name="debug" />
-		<condition property="debug" value="true" else="true">
-			<istrue value="${javac.debug}" />
-		</condition>
-
-		<property name="debug" value="true" />
-		<echo message="Debug = ${debug}" />
-
 		<!-- Compile the java code from ${src} into ${build} -->
-		<javac srcdir="${src}" destdir="${build}" source="${src.version}" target="${src.version}" includeantruntime="false" debug="${debug}" encoding="UTF-8"
+		<javac srcdir="${src}" destdir="${build}" source="${src.version}" target="${src.version}" includeantruntime="false" debug="true" encoding="UTF-8"
 			excludes="org/zaproxy/zap/extension/*/files/**,org/zaproxy/zap/extension/*/resources/**">
 			<compilerarg value="-Xlint:all"/>
 			<compilerarg value="-Xlint:-path"/>
@@ -85,7 +84,7 @@
 		</javac>
 
 		<echo message="Compiling tests..." />
-		<javac srcdir="${test.src}" destdir="${test.build}" source="${src.version}" target="${src.version}" includeantruntime="false" debug="${debug}" encoding="UTF-8">
+		<javac srcdir="${test.src}" destdir="${test.build}" source="${src.version}" target="${src.version}" includeantruntime="false" debug="true" encoding="UTF-8">
 			<compilerarg value="-Xlint:all"/>
 			<compilerarg value="-Xlint:-path"/>
 			<compilerarg value="-Xlint:-options"/> <!-- Otherwise fails with Java 8 -->
@@ -370,13 +369,14 @@
 		</sequential>
 	</macrodef>
 
-	<target name="build-all" depends="clean,compile" description="build all of the extensions">
+	<target name="build-all" depends="clean,compile,download-files" description="build all of the extensions">
 		<delete file="${versions.file}"/>
 		
 		<!-- 'Standard' addons (keep in alphabetical order ;) -->
 		<build-addon name="accessControl" />
 		<build-addon name="amf" />
 		<build-addon name="ascanrulesAlpha" />
+		<build-addon name="authstats" />
 		<build-addon name="birtreports" />
 		<build-addon name="browserView" />
 		<build-addon name="bugtracker" />
@@ -384,9 +384,11 @@
 		<build-addon name="cmss" />
 		<build-addon name="codedx"/>
 		<build-addon name="communityScripts"/>
+		<build-addon name="cspscanner"/>
 		<build-addon name="customreport"/>
 		<build-addon name="domxss"/>
 		<build-addon name="exportreport" />
+		<build-addon name="formhandler" />
 		<build-addon name="help_bs_BA" />
 		<build-addon name="help_es_ES" />
 		<build-addon name="help_fr_FR" />
@@ -394,14 +396,12 @@
 		<build-addon name="highlighter" />
 		<build-addon name="httpsinfo" addonid="httpsInfo" />
 		<build-addon name="importLogFiles" />
-		<build-addon name="pscanrulesAlpha" >
-				<!-- Add the extra classes required -->
-				<jar jarfile="${dist}/${file}" update="true" compress="true">
-					<zipfileset dir="${build}" prefix="">
-						<include name="com/veggiespam/imagelocationscanner/**"/>
-					</zipfileset>
-				</jar>
-			</build-addon>
+		<build-addon name="jxbrowser" />
+		<build-addon name="jxbrowserlinux64" />
+		<build-addon name="jxbrowsermacos" />
+		<build-addon name="jxbrowserwindows" />
+		<build-addon name="openapi" />
+		<build-pscanrulesalpha-addon />
 		<build-addon name="requester" />
 		<build-addon name="revisit" />
 		<build-addon name="saml" />
@@ -412,13 +412,8 @@
 		<build-addon name="sse" />
 		<build-addon name="tlsdebug" />
 		<build-addon name="viewstate" />
+		<build-addon name="vulncheck" />
 		<build-addon name="wappalyzer" />
-		<!-- Need to download the drivers before building the webdriver add-ons -->
-		<antcall target="clean-webdrivers"/>
-		<antcall target="download-webdrivers"/>
-		<build-addon name="webdriverlinux" />
-		<build-addon name="webdrivermacos" />
-		<build-addon name="webdriverwindows" />
 
 	</target>
 
@@ -512,6 +507,10 @@
         <build-deploy-addon name="bugtracker" />
     </target>
     
+    <target name="generate-wiki-bugtracker" description="Generates the wiki of Bug Tracker add-on">
+        <generate-wiki addon="bugtracker" />
+    </target>
+
 	<target name="generate-wiki-browserView" description="Generates the wiki of browser extension">
 		<generate-wiki addon="browserView" />
 	</target>
@@ -536,6 +535,15 @@
 		<generate-wiki addon="communityScripts" />
 	</target>
 
+	<target name="deploy-cspscanner" description="deploy the CSP Scanner">
+		<build-deploy-addon name="cspscanner" />
+	</target>
+
+	<target name="deploy-cspscanner-without-help-indexes" description="deploy the CSP scanner">
+		<!-- To facilitate quick Dev builds -->
+		<build-deploy-addon-without-help-indexes name="cspscanner" />
+	</target>
+	
 	<target name="deploy-customreport" description="deploy the custom reporting extension">
 		<build-deploy-addon name="customreport" />
 	</target>
@@ -588,19 +596,102 @@
 		<build-deploy-addon name="importLogFiles" />
 	</target>
 
+	<target name="download-jxbrowser" depends="compile" description="download the jxbrowser files">
+		<!-- This must be called before the platform specific jxbrowser add-ons are built -->
+		<!-- It is not included by default in the build as it always downloads the file -->
+		<property name="rootdir" location="${ant.file}/../.."/>
+		<java classname="org.zaproxy.zap.extension.jxbrowser.JxBrowserDownload">
+			<classpath>
+				<fileset dir="${dist.lib.dir}">
+					<include name="**/*.jar" />
+					<include name="**/*.zap" />
+				</fileset>
+				<path location="${build}" />
+			</classpath>
+			<arg value="${rootdir}"/>
+		</java>
+	</target>
+
+	<target name="deploy-jxbrowser-core" description="deploy the jxbrowser core extension">
+		<build-deploy-addon name="jxbrowser" />
+	</target>
+
+	<target name="deploy-jxbrowser-linux64" depends="download-jxbrowser" description="deploy the jxbrowser linux64 extension">
+		<build-deploy-addon name="jxbrowserlinux64" />
+	</target>
+
+	<target name="deploy-jxbrowser-macos" depends="download-jxbrowser" description="deploy the jxbrowser macos extension">
+		<build-deploy-addon name="jxbrowsermacos" />
+	</target>
+
+	<target name="deploy-jxbrowser-windows" depends="download-jxbrowser" description="deploy the jxbrowser windows extension">
+		<build-deploy-addon name="jxbrowserwindows" />
+	</target>
+
+	<target name="deploy-jxbrowser-all" description="deploy all of the jxbrowser extensions">
+		<build-deploy-addon name="jxbrowser" />
+		<build-deploy-addon name="jxbrowserlinux64" />
+		<build-deploy-addon name="jxbrowsermacos" />
+		<build-deploy-addon name="jxbrowserwindows" />
+	</target>
+
+	<target name="generate-wiki-jxbrowser" description="Generates the wiki of jxbrowser Add-on">
+		<generate-wiki addon="jxbrowser" />
+	</target>
+	
 	<target name="deploy-onlineMenu" description="deploy the online menu">
 		<build-deploy-addon name="onlineMenu" />
 	</target>
 
-	<target name="deploy-pscanrulesAlpha" description="deploy the passive scan rules">
-		<build-deploy-addon name="pscanrulesAlpha" />
+	<macrodef name="build-pscanrulesalpha-addon" description="Builds passive scan rules add-on">
+		<sequential>
+			<build-addon name="pscanrulesAlpha">
+				<!-- Add the extra classes required -->
+				<jar jarfile="${dist}/${file}" update="true" compress="true">
+					<zipfileset dir="${build}" prefix="">
+						<include name="com/veggiespam/imagelocationscanner/**" />
+					</zipfileset>
+				</jar>
+			</build-addon>
+		</sequential>
+	</macrodef>
+
+	<macrodef name="build-pscanrulesalpha-addon-without-help-indexes" description="Builds passive scan rules add-on">
+		<sequential>
+			<build-addon-without-help-indexes name="pscanrulesAlpha">
+				<!-- Add the extra classes required -->
+				<jar jarfile="${dist}/${file}" update="true" compress="true">
+					<zipfileset dir="${build}" prefix="">
+						<include name="com/veggiespam/imagelocationscanner/**" />
+					</zipfileset>
+				</jar>
+			</build-addon-without-help-indexes>
+		</sequential>
+	</macrodef>
+
+	<target name="deploy-pscanrulesAlpha" depends="clean, compile" description="deploy the passive scan rules">
+		<build-pscanrulesalpha-addon />
+		<deploy-addon name="pscanrulesAlpha" />
 	</target>
 
-	<target name="deploy-pscanrulesAlpha-without-help-indexes" description="deploy the passive scan rules">
+	<target name="deploy-pscanrulesAlpha-without-help-indexes" depends="clean, compile" description="deploy the passive scan rules">
 		<!-- To facilitate quick Dev builds -->
-		<build-deploy-addon-without-help-indexes name="pscanrulesAlpha" />
+		<build-pscanrulesalpha-addon-without-help-indexes />
+		<deploy-addon name="pscanrulesAlpha" />
 	</target>
 	
+	<target name="deploy-openapi" description="deploy the openapi add-on">
+		<build-deploy-addon name="openapi" />
+	</target>
+
+	<target name="deploy-openapi-without-help-indexes" description="deploy the openapi add-on">
+		<build-deploy-addon-without-help-indexes name="openapi" />
+	</target>
+
+	<target name="generate-wiki-openapi" description="Generates the openapi wiki">
+		<generate-wiki addon="openapi" />
+	</target>
+
 	<target name="generate-wiki-pscanrulesAlpha" description="Generates the wiki of passive scan rules">
 		<generate-wiki addon="pscanrulesAlpha" />
 	</target>
@@ -608,10 +699,6 @@
     <target name="deploy-requester" description="deploy the Requester extension">
         <build-deploy-addon name="requester" />
     </target>
-
-  	<target name="deploy-replacer" description="deploy the replacer extension">
-  		<build-deploy-addon name="replacer"/>
-	</target>
 
     <target name="deploy-revisit" description="deploy the revisit extension">
         <build-deploy-addon name="revisit" />
@@ -629,6 +716,10 @@
     	<build-deploy-addon name="sequence" />
 	</target>
 	
+	<target name="generate-wiki-sequence" description="Generates the wiki for the Sequence scanner addon">
+		<generate-wiki addon="sequence" />
+	</target>
+	
 	<target name="deploy-serverSentEvents" description="deploy the Server-Sent Events extension">
 		<build-deploy-addon name="sse" />
 	</target>
@@ -639,6 +730,14 @@
 
     <target name="deploy-simpleExample" description="deploy the simple example extension">
         <build-deploy-addon name="simpleExample" />
+    </target>
+
+	<target name="deploy-formhandler" description="deploy the form handling extension">
+		<build-deploy-addon name="formhandler" />
+	</target>
+
+    <target name="generate-wiki-formhandler" description="Generates the wiki of form handling extension">
+        <generate-wiki addon="formhandler" />
     </target>
 
     <target name="generate-wiki-simpleExample" description="Generates the wiki of simple example extension">
@@ -656,7 +755,11 @@
     <target name="deploy-soap" description="deploy the SOAP scanning extension">
 		<build-deploy-addon name="soap" />
 	</target>
-	  
+
+	<target name="generate-wiki-soap" description="Generates the soap wiki">
+		<generate-wiki addon="soap" />
+	</target>
+
 	<target name="deploy-tlsDebug" description="deploy the tlsDebug extension">
 		<build-deploy-addon name="tlsdebug" />
 	</target>
@@ -686,63 +789,26 @@
         <build-deploy-addon name="wavsepRpt" />
     </target>
 
-	<target name="download-webdrivers" depends="" description="download the webdriver files">
-		<!-- This must be called before the WebDriver add-ons are built -->
-		<!-- It is not included by default in the build as it always downloads the file -->
-		<java classname="org.zaproxy.zap.extension.webdriverlinux.WebdriverDownload">
-			<classpath>
-				<fileset dir="${dist.lib.dir}">
-					<include name="**/*.jar" />
-					<include name="**/*.zap" />
-				</fileset>
-				<path location="${build}" />
-			</classpath>
-		</java>
-		<java classname="org.zaproxy.zap.extension.webdrivermacos.WebdriverDownload">
-			<classpath>
-				<fileset dir="${dist.lib.dir}">
-					<include name="**/*.jar" />
-					<include name="**/*.zap" />
-				</fileset>
-				<path location="${build}" />
-			</classpath>
-		</java>
-		<java classname="org.zaproxy.zap.extension.webdriverwindows.WebdriverDownload">
-			<classpath>
-				<fileset dir="${dist.lib.dir}">
-					<include name="**/*.jar" />
-					<include name="**/*.zap" />
-				</fileset>
-				<path location="${build}" />
-			</classpath>
-		</java>
-	</target>
-
-	<target name="deploy-webdriverlinux" description="deploy the webdriverlinux extension">
-		<antcall target="download-webdrivers"/>
-		<build-deploy-addon name="webdriverlinux" />
-	</target>
-
-	<target name="deploy-webdrivermacos" description="deploy the webdrivermacos extension">
-		<antcall target="download-webdrivers"/>
-		<build-deploy-addon name="webdrivermacos" />
-	</target>
-
-	<target name="deploy-webdriverwindows" description="deploy the webdriverwindows extension">
-		<antcall target="download-webdrivers"/>
-		<build-deploy-addon name="webdriverwindows" />
-	</target>
-
 	<target name="deploy-weekly" description="deploy extensions to be included in weekly releases">
-		<!-- Set to compile with debug information -->
-		<property name="javac.debug" value="true" />
 		<antcall target="build-all" />
 		<copy todir="${zap.plugin.dir}">
 			<fileset dir="${dist}">
 				<include name="accessControl-${status}-*.zap"/>
+				<include name="cspscanner-${status}-*.zap"/>
+				<include name="formhandler-${status}-*.zap"/>
+				<include name="jxbrowser*-${status}-*.zap"/>
+				<include name="openapi-${status}-*.zap"/>
 				<include name="sequence-${status}-*.zap"/>
 				<include name="soap-${status}-*.zap"/>
-				<include name="webdriver*-${status}-*.zap"/>
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="deploy-release" description="deploy extensions to be included in full releases">
+		<antcall target="build-all" />
+		<copy todir="${zap.plugin.dir}">
+			<fileset dir="${dist}">
+				<include name="jxbrowser*-${status}-*.zap"/>
 			</fileset>
 		</copy>
 	</target>

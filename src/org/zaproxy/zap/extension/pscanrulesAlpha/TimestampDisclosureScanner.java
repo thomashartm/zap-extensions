@@ -3,7 +3,7 @@
  *
  * ZAP is an HTTP/HTTPS proxy for assessing web application security.
  *
- * Copyright 2012 The ZAP development team
+ * Copyright 2017 The ZAP development team
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ public class TimestampDisclosureScanner extends PluginPassiveScanner {
 	/**
 	 * ignore the following response headers for the purposes of the comparison, since they cause false positives
 	 */
-	private static final String [] RESPONSE_HEADERS_TO_IGNORE = {HttpHeader._KEEP_ALIVE, HttpHeader.CACHE_CONTROL, "ETag", "Age"};  
+	private static final String [] RESPONSE_HEADERS_TO_IGNORE = {HttpHeader._KEEP_ALIVE, HttpHeader.CACHE_CONTROL, "ETag", "Age", "Strict-Transport-Security"};
 
 	/**
 	 * gets the name of the scanner
@@ -123,7 +123,7 @@ public class TimestampDisclosureScanner extends PluginPassiveScanner {
 				} 
 			}
 
-			String responsebody = new String (msg.getResponseBody().getBytes());
+			String responsebody = msg.getResponseBody().toString();
 			String [] responseparts = {filteredResponseheaders.toString(), responsebody};
 
 			//try each of the patterns in turn against the response.				
@@ -156,7 +156,7 @@ public class TimestampDisclosureScanner extends PluginPassiveScanner {
 									getDescription() + " - "+ timestampType, 
 									msg.getRequestHeader().getURI().toString(), 
 									"", //param
-									evidence, //TODO: this should be the the attack (NULL).  Set this field to NULL, once Zap allows mutiple alerts on the same URL, with just different evidence 
+									"", // attack
 									getExtraInfo(msg, evidence, timestamp),  //other info
 									getSolution(), 
 									getReference(), 

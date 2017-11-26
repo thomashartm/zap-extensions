@@ -21,6 +21,7 @@ package org.zaproxy.zap.extension.soap;
 
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
+import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -34,9 +35,9 @@ import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.control.Control;
 import org.parosproxy.paros.extension.ExtensionAdaptor;
 import org.parosproxy.paros.extension.ExtensionHook;
-import org.parosproxy.paros.extension.ExtensionLoader;
 import org.parosproxy.paros.model.Model;
 import org.parosproxy.paros.view.View;
+import org.zaproxy.zap.extension.api.API;
 import org.zaproxy.zap.extension.spider.ExtensionSpider;
 import org.zaproxy.zap.spider.parser.SpiderParser;
 import org.zaproxy.zap.view.ZapMenuItem;
@@ -63,6 +64,8 @@ public class ExtensionImportWSDL extends ExtensionAdaptor {
 	public void hook(ExtensionHook extensionHook) {
 		super.hook(extensionHook);
 
+        API.getInstance().registerApiImplementor(new SoapAPI(this));
+
 	    if (getView() != null) {
 	        extensionHook.getHookMenu().addToolsMenuItem(getMenuImportLocalWSDL());
 	        extensionHook.getHookMenu().addToolsMenuItem(getMenuImportUrlWSDL());
@@ -83,13 +86,6 @@ public class ExtensionImportWSDL extends ExtensionAdaptor {
 	@Override
 	public void unload() {
 		super.unload();
-		/* Disables menu options. */
-		Control control = Control.getSingleton();
-		ExtensionLoader extLoader = control.getExtensionLoader();
-	    if (getView() != null) {
-	    	extLoader.removeToolsMenuItem(getMenuImportLocalWSDL());
-	    	extLoader.removeToolsMenuItem(getMenuImportUrlWSDL());
-	    }
 	    /* Destroys current ImportWSDL singleton instance. */
 	    ImportWSDL.destroy();
 	    /* Disables custom spider. */
@@ -112,7 +108,7 @@ public class ExtensionImportWSDL extends ExtensionAdaptor {
             		chooser.setFileFilter(filter);
             	    int rc = chooser.showOpenDialog(View.getSingleton().getMainFrame());
             	    if(rc == JFileChooser.APPROVE_OPTION) {
-            	    	parser.extFileWSDLImport(chooser.getSelectedFile(), THREAD_PREFIX + threadId++);
+            	        fileUrlWSDLImport(chooser.getSelectedFile());
             	    }
 
                 }
@@ -148,10 +144,14 @@ public class ExtensionImportWSDL extends ExtensionAdaptor {
 	public void extUrlWSDLImport(final String url){
 		parser.extUrlWSDLImport(url, THREAD_PREFIX + threadId++);
 	}
-	
+
+	public void fileUrlWSDLImport(final File file){
+            parser.extFileWSDLImport(file, THREAD_PREFIX + threadId++);
+	    }
+
 	@Override
 	public boolean canUnload() {
-		return true;
+		return false;
 	}
 
 	@Override
